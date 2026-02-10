@@ -1,18 +1,15 @@
 import React from "react";
 
 const categories = [
-    { key: "trending", label: "Trending" },
+    { key: "trending", label: "Trends Now" },
     { key: "action", label: "Action" },
-    { key: "romance", label: "Romance" },
+    { key: "adventure", label: "Adventure" },
     { key: "animation", label: "Animation" },
-    { key: "marvel", label: "Marvel" },
-    { key: "special", label: "Special" },
-    { key: "horror", label: "Horror" },
-    { key: "english", label: "English" },
-    { key: "netflix", label: "Netflix" },
-    { key: "disney", label: "Disney+" },
+    { key: "biography", label: "Biography" },
+    { key: "crime", label: "Crime" },
     { key: "comedy", label: "Comedy" },
-    { key: "mystery", label: "Mystery" },
+    { key: "documentary", label: "Documentary" },
+    { key: "drama", label: "Drama" },
 ];
 
 interface CategoryButtonsProps {
@@ -21,14 +18,14 @@ interface CategoryButtonsProps {
 }
 
 const CategoryButtons = ({ selected, onSelect }: CategoryButtonsProps) => (
-    <div className="flex flex-wrap gap-4 mt-12 mb-12 justify-center fade-in-up">
+    <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide py-2">
         {categories.map((cat) => (
             <button
                 key={cat.key}
-                className={`px-6 py-2.5 rounded-full font-medium text-sm transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 border border-transparent
+                className={`px-5 py-1.5 rounded text-xs font-semibold tracking-wide uppercase transition-all duration-300 whitespace-nowrap
           ${selected === cat.key
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                        : 'bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white border-white/5'
+                        ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/50 scale-105'
+                        : 'bg-[#1a1c22] text-gray-400 hover:bg-[#2a2d35] hover:text-white border border-transparent hover:border-gray-600'
                     }`}
                 onClick={() => onSelect(cat.key)}
             >
