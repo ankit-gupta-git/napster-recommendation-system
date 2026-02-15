@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
 const Footer = () => {
@@ -9,7 +10,15 @@ const Footer = () => {
 
                 <div className="flex flex-col md:flex-row justify-between gap-12 mb-12">
                     <div className="space-y-6 max-w-sm">
-                        <Link href="/" className="text-2xl font-bold text-sky-600 tracking-tighter">NAPSTER</Link>
+                        <Link href="/" className="block">
+                            <Image
+                                src="/images/mov.png"
+                                alt="Napster"
+                                width={240}
+                                height={80}
+                                className="h-20 w-auto object-contain"
+                            />
+                        </Link>
                         <p className="leading-relaxed">
                             The ultimate streaming destination. Thousands of movies, TV shows, and originals at your fingertips.
                         </p>

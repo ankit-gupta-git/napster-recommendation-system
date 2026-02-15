@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CategoryButtons from "../components/CategoryButtons";
@@ -10,16 +11,15 @@ import { Play, Plus, TrendingUp, Sparkles, Info } from "lucide-react";
 import axios from 'axios';
 import { motion, AnimatePresence } from "framer-motion";
 
-const APIURL = "https://api.themoviedb.org/3/discover/movie?sort_by=popularity.desc&api_key=04c35731a5ee918f014970082a0088b1&page=1";
-const SEARCHAPI = "https://api.themoviedb.org/3/search/movie?&api_key=04c35731a5ee918f014970082a0088b1&query=";
-const GENREAPI = "https://api.themoviedb.org/3/discover/movie?api_key=04c35731a5ee918f014970082a0088b1&with_genres=";
+const API_KEY = "04c35731a5ee918f014970082a0088b1";
+const BASE_URL = "https://api.themoviedb.org/3";
 const IMGPATH = "https://image.tmdb.org/t/p/original"; // High res for hero
 
 const genreIds: Record<string, number> = {
   action: 28,
   adventure: 12,
   animation: 16,
-  biography: 36,
+  biography: 36, // Using History for Biography
   crime: 80,
   comedy: 35,
   documentary: 99,
@@ -37,11 +37,15 @@ interface Movie {
 }
 
 const Home = () => {
+  const searchParams = useSearchParams();
+  const search = searchParams.get('search') || "";
   const [movies, setMovies] = useState<Movie[]>([]);
   const [heroMovies, setHeroMovies] = useState<Movie[]>([]);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState("action");
-  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("trending");
+  // removed local search state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Trailer Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,33 +58,71 @@ const Home = () => {
 
   // Initial Fetch
   useEffect(() => {
+    let isMounted = true;
     const fetchMovies = async () => {
-      let api = APIURL;
-      if (search) {
-        api = SEARCHAPI + search;
-      } else if (selectedCategory && selectedCategory !== "trending") {
-        if (genreIds[selectedCategory]) {
-          api = GENREAPI + genreIds[selectedCategory];
-        }
-      }
-
+      setLoading(true);
+      setError(null);
       try {
-        console.log("Fetching movies from:", api);
-        const res = await fetch(api);
-        const data = await res.json();
-        console.log("Fetched data:", data);
-        const results = data.results || [];
-        setMovies(results);
+        let baseUrl = `${BASE_URL}/discover/movie`;
+        const params = new URLSearchParams({
+          api_key: API_KEY,
+          language: 'en-US',
+          page: '1',
+          include_adult: 'false',
+          sort_by: 'popularity.desc'
+        });
 
-        // If on initial load or trending, set Hero movies
-        if (!search && selectedCategory === "action" && results.length > 0) {
-          setHeroMovies(results.slice(0, 5)); // Top 5 for carousel
+        if (search) {
+          baseUrl = `${BASE_URL}/search/movie`;
+          params.set('query', search);
+          params.delete('sort_by');
+        } else if (selectedCategory && selectedCategory !== "trending") {
+          const genreId = genreIds[selectedCategory.toLowerCase()];
+          if (genreId) {
+            params.set('with_genres', genreId.toString());
+          }
         }
-      } catch (error) {
-        console.error("Failed to fetch movies:", error);
+
+        const url = `${baseUrl}?${params.toString()}`;
+        console.log("Fetching URL:", url);
+
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (isMounted) {
+          const results = data.results || [];
+          console.log(`Fetched ${results.length} movies for category: ${selectedCategory}`);
+          setMovies(results);
+
+          // Update Hero logic: If trending or initial load, or if we want to reflect the category in the hero
+          if (!search && results.length > 0) {
+            setHeroMovies(results.slice(0, 5));
+          } else if (search && results.length > 0) {
+            setHeroMovies(results.slice(0, 5));
+          }
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Failed to fetch movies:", err);
+          setError(err.message || "Failed to load movies");
+          setMovies([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     fetchMovies();
+
+    return () => {
+      isMounted = false;
+    };
   }, [selectedCategory, search]);
 
   // Carousel Logic
@@ -160,7 +202,7 @@ const Home = () => {
                     <span className="text-white bg-red-600/80 px-2 py-1 rounded text-[10px] font-bold">TOP 10</span>
                   </div>
 
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-tight drop-shadow-2xl line-clamp-2">
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-bebas text-white leading-none drop-shadow-2xl line-clamp-2 tracking-wide">
                     {currentHero.original_title}
                   </h1>
 
@@ -202,7 +244,9 @@ const Home = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-white">
               <TrendingUp className="w-6 h-6 text-sky-500" />
-              <h3 className="text-2xl font-bold">Trends Now</h3>
+              <h3 className="text-3xl font-bebas tracking-wide capitalize">
+                {selectedCategory === "trending" ? "Trends Now" : selectedCategory}
+              </h3>
             </div>
             <div className="flex gap-4 md:gap-6 text-xs font-medium text-gray-400 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
               <span className="text-sky-500 cursor-pointer whitespace-nowrap">Popular</span>
@@ -214,16 +258,30 @@ const Home = () => {
           {/* Category Tabs */}
           <CategoryButtons
             selected={selectedCategory}
-            onSelect={(cat) => { setSelectedCategory(cat); setSearch(""); }}
+            onSelect={(cat) => { setSelectedCategory(cat); }}
           />
 
           {/* Movie Grid/Row */}
           <div className="min-h-[300px]">
-            <MovieCards
-              movies={movies}
-              onPlay={playTrailer}
-              onDetails={(movie) => { setSelectedMovie(movie); setIsDetailsOpen(true); }}
-            />
+            {loading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-sky-500"></div>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-40 text-red-500 font-medium">
+                {error}
+              </div>
+            ) : movies.length === 0 ? (
+              <div className="flex items-center justify-center h-40 text-gray-500 font-medium">
+                No movies found for this category.
+              </div>
+            ) : (
+              <MovieCards
+                movies={movies}
+                onPlay={playTrailer}
+                onDetails={(movie) => { setSelectedMovie(movie); setIsDetailsOpen(true); }}
+              />
+            )}
           </div>
         </div>
 
@@ -231,7 +289,7 @@ const Home = () => {
         <div className="space-y-6">
           <div className="flex items-center gap-2 text-white border-b border-gray-800 pb-4">
             <Sparkles className="w-6 h-6 text-sky-500" />
-            <h3 className="text-2xl font-bold">Recommended For You</h3>
+            <h3 className="text-3xl font-bebas tracking-wide">Recommended For You</h3>
           </div>
           <MovieCards
             movies={movies.slice(5, 17)}

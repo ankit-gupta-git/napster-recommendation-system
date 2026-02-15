@@ -5,10 +5,26 @@ import Image from "next/image";
 import { Menu, ChevronDown, Search, User, LogOut, Bell, X } from "lucide-react";
 import { FaUserCircle } from "react-icons/fa";
 
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const { replace } = useRouter();
+
+    const handleSearch = (term: string) => {
+        const params = new URLSearchParams(searchParams);
+        if (term) {
+            params.set('search', term);
+        } else {
+            params.delete('search');
+        }
+        replace(`${pathname}?${params.toString()}`);
+    }
 
     // Background change on scroll
     useEffect(() => {
@@ -29,14 +45,18 @@ const Navbar = () => {
                 className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? "bg-[#0b0c10] shadow-lg shadow-sky-900/10" : "bg-gradient-to-b from-black/80 to-transparent"
                     }`}
             >
-                <div className="max-w-[1920px] mx-auto px-4 md:px-12 py-4 flex items-center justify-between">
+                <div className="max-w-[1920px] mx-auto px-4 md:px-12 py-2 flex items-center justify-between">
 
                     {/* Left: Logo & Links */}
                     <div className="flex items-center gap-12">
                         <Link href="/" className="flex items-center gap-2 group">
-                            <div className="text-3xl font-bold tracking-tighter text-sky-500 group-hover:text-white transition-colors duration-300">
-                                NAPSTER
-                            </div>
+                            <Image
+                                src="/images/mov.png"
+                                alt="Napster"
+                                width={200}
+                                height={64}
+                                className="h-16 w-auto object-contain group-hover:scale-105 transition-transform duration-300"
+                            />
                         </Link>
 
                         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-300">
@@ -60,6 +80,10 @@ const Navbar = () => {
                             <input
                                 type="text"
                                 placeholder="Search..."
+                                defaultValue={searchParams.get('search')?.toString()}
+                                onChange={(e) => {
+                                    handleSearch(e.target.value);
+                                }}
                                 className="bg-transparent border-none text-sm text-white placeholder-gray-500 focus:outline-none w-32 focus:w-64 transition-all duration-300 px-2"
                             />
                         </div>
@@ -75,13 +99,13 @@ const Navbar = () => {
                                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                                     className="flex items-center gap-2 hover:text-white transition-colors"
                                 >
-                                    <div className="w-8 h-8 rounded bg-sky-600 flex items-center justify-center overflow-hidden border border-transparent hover:border-white transition-all">
+                                    <div className="w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center overflow-hidden border border-transparent hover:border-white transition-all">
                                         <Image
                                             src="/images/img1.jpg"
                                             alt="User"
                                             width={32}
                                             height={32}
-                                            className="object-cover w-full h-full"
+                                            className="object-cover w-full h-full rounded-full"
                                             onError={(e) => {
                                                 const target = e.target as HTMLImageElement;
                                                 target.style.display = 'none';
@@ -123,7 +147,13 @@ const Navbar = () => {
             <div className={`fixed inset-0 z-[60] bg-black/95 transform transition-transform duration-300 ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-8">
-                        <span className="text-2xl font-bold text-sky-500">NAPSTER</span>
+                        <Image
+                            src="/images/mov.png"
+                            alt="Napster"
+                            width={240}
+                            height={80}
+                            className="h-20 w-auto object-contain"
+                        />
                         <button onClick={() => setMobileMenuOpen(false)} className="text-white">
                             <X className="w-8 h-8" />
                         </button>
